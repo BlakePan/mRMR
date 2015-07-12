@@ -48,7 +48,22 @@ if __name__ == "__main__":
 	X = DataPreprocessing(X, dataset)
 
 	#build mutual info table
-	MAX_FEANUM = 3
+	MAX_FEANUM = 50
+	#test
+	'''
+	x1 = np.array([0,0,0,0,0,0,1,0,1,0])
+	x2 = np.array([0,0,0,0,0,1,0,0,1,0])
+	x3 = np.array([0,0,0,0,1,0,0,0,1,0])
+	x4 = np.array([0,0,0,1,0,0,0,0,1,0])
+	x5 = np.array([0,0,1,0,0,0,1,0,1,0])
+	x6 = np.array([0,1,0,0,0,1,0,0,1,0])
+		
+	S = np.array([x1,x2,x3,x4,x5,x6])
+	X = S.T
+	y = np.array([0,1,2,2,0,0,0,1,2,0])
+	'''
+	#test code end
+
 	Total_feanum = X.shape[1]
 	Rel_table = np.zeros(Total_feanum)
 	Red_table = np.zeros(Total_feanum*(Total_feanum-1)/2)
@@ -57,8 +72,7 @@ if __name__ == "__main__":
 	logger.debug(Rel_table)
 	logger.debug('Red_table')
 	logger.debug(Red_table)
-	exit()
-
+	
 	#Run mRMR algorithm
 	fmRMR = open('./log/mRMR_error_mean_SVM_'+dataset+'.csv', 'w')
 	error_mean = []
@@ -79,8 +93,10 @@ if __name__ == "__main__":
 	
 	for i in range(MAX_FEANUM):
 		scores = []
-		feat_ind = mRMR_sel(X, y, i+1)
+		feat_ind = mRMR_sel(X, y, i+1, Rel_table, Red_table)
+		#print feat_ind
 		mRMR_X = X[:,feat_ind]
+		#print mRMR_X.T
 		scores = cross_validation.cross_val_score(clf_SVM, mRMR_X, y, cv=10)
 		#fmRMR.write(str(scores))
 		error_mean.append(scores.mean())

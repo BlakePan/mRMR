@@ -38,22 +38,19 @@ def Build_Minfo_table(X, C, Rel_table, Red_table):
 	#m : number of features
 
 	for i in range(m):
-		print i
+		#print i
 		Rel_table[i] = Mutual_Info(X[:,i],C)
 
-	cnt = 0
 	for i in range(m-1):
 		for j in range(m):
-			cnt += 1
-			print "i=%d, j=%d" % (i,j)
-			print cnt
 			if j > i:
+				print "i=%d, j=%d" % (i,j)
 				offset = 0
 
 				if i > 0:
 					for offcnt in range(i):
-						offset += (m-offcnt+1)
-
+						offset += (m-offcnt-1)
+				print "index %d" % ((j-i)+offset-1)
 				Red_table[(j-i)+offset-1] = Mutual_Info(X[:,i],X[:,j])
 
 	return [Rel_table,Red_table]
@@ -92,18 +89,20 @@ def mRMR(S, C):
 	return (D-R)
 
 #below use lookup table to save computing time
-def Lookup_Rel(S, C, Rel_table):
+def Lookup_Rel(S, X, Rel_table):
 	[M, m] = S.shape if S.ndim >1 else [S.shape[0],1]
-	
+		
 	D = 0
 	for xi in S:
-		rel_index = np.where(S==xi)
-		rel_index = int(rel_index[0])
+		for fea_ind in range(X.shape[1]):
+			if (X[:,fea_ind]==xi).mean() == 1:
+				rel_index = fea_ind
+				break
 		D += Rel_table[rel_index]
 	
 	return D/M
 
-def Lookup_Red(S, Red_table):
+def Lookup_Red(S, X, Red_table):
 	[M, m] = S.shape if S.ndim >1 else [S.shape[0],1]
 	if M == 1:
 		return 0
@@ -112,8 +111,18 @@ def Lookup_Red(S, Red_table):
 	for xi in S:		
 		for xj in S:
 			if not np.array_equal(xi,xj):
-				xi_index = int(np.where(S==xi)[0])
-				xj_index = int(np.where(S==xi)[0])
+
+				#find index
+				for fea_ind in range(X.shape[1]):
+					if (X[:,fea_ind]==xi).mean() == 1:
+						xi_index = fea_ind
+						break
+				for fea_ind in range(X.shape[1]):
+					if (X[:,fea_ind]==xj).mean() == 1:
+						xj_index = fea_ind
+						break
+				#xi_index = int(np.where(S==xi)[0])
+				#xj_index = int(np.where(S==xi)[0])
 
 				if xi_index > xj_index:
 					xi_index, xj_index = xj_index, xi_index
@@ -121,14 +130,14 @@ def Lookup_Red(S, Red_table):
 				offset = 0
 				if xi_index > 0:
 					for offcnt in range(xi_index):
-						offset += (M-offcnt+1)
+						offset += (M-offcnt-1)
 
-				R += Red_table((xj_index-xi_index)+offset-1)
+				R += Red_table[(xj_index-xi_index)+offset-1]
 	return R/(M*M)
 
-def mRMR_table(S, C, Rel_table, Red_table):
-	D = Lookup_Rel(S, C, Rel_table)
-	R = Lookup_Red(S, Red_table)
+def mRMR_table(S, X, Rel_table, Red_table):
+	D = Lookup_Rel(S, X, Rel_table)
+	R = Lookup_Red(S, X, Red_table)
 	return (D-R)
 
 def mRMR_sel(X, C, Max_feanum, Rel_table, Red_table):
@@ -146,7 +155,7 @@ def mRMR_sel(X, C, Max_feanum, Rel_table, Red_table):
 			cur_x = X[:,ith_feat]					#find current feature vector
 													#put it into tmp set with already selected features
 			tmp_set = np.array([cur_x]) if tmp_set == [] else np.vstack((tmp_set,cur_x))
-			set_eval.append(mRMR(tmp_set, C))		#using mRMR selection method
+			set_eval.append(mRMR_table(tmp_set, X, Rel_table, Red_table))		#using mRMR selection method
 
 		max_value = max(set_eval)
 		max_index = set_eval.index(max_value)# find the max one
