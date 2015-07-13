@@ -40,30 +40,67 @@ logger.debug('y')
 logger.debug(y)
 
 #Setting of classifer
-clf_SVM = SVC(kernel='linear', C=1)
+clf = SVC(kernel='linear', C=1)
+
+def Wrapper(feature_index, X, y, sel = "forward"):
+	f_index = feature_index
+	num_featind = f_index.shape[0]
+	optimal_set = [] if sel == "forward" else X[:,f_index]
+
+	if sel == "forward":
+		scores = []
+		error_mean = []
+		tmp_min = 0
+
+		for inc_ind in range(num_featind):
+			for index in f_index:
+				if index not in optimal_set:
+					cur_index = np.append(optimal_set,index)
+					cur_x = X[:,cur_index]
+					scores = cross_validation.cross_val_score(clf, cur_x, y, cv=10)	
+					scores = 1-scores	
+					error_mean.append(scores.mean())
+
+			min_value = min(error_mean)
+			min_index= error_mean.index(min_value)			
+
+			if inc_ind == 0 or (inc_ind > 0 and min_value <= tmp_min):
+				tmp_min = min_value
+				np.append(optimal_set, f_index[min_index])
+				np.delete(f_index, min_index, None)
+			elif min_value > tmp_min:
+				return optimal_set
+
+		return optimal_set
+	else:
+		scores = []
+		error_mean = []
+		tmp_min = 0
+
+		for inc_ind in range(num_featind):
+			for index in optimal_set:				
+				cur_index = np.delete(optimal_set,optimal_set.index(index))
+				cur_x = X[:,cur_index]
+				scores = cross_validation.cross_val_score(clf, cur_x, y, cv=10)	
+				scores = 1-scores	
+				error_mean.append(scores.mean())
+
+			min_value = min(error_mean)
+			min_index= error_mean.index(min_value)			
+
+			if inc_ind == 0 or (inc_ind > 0 and min_value <= tmp_min):
+				tmp_min = min_value				
+			elif min_value > tmp_min:
+				return optimal_set
+
+		return optimal_set
 
 if __name__ == "__main__":
-	#exit()
 	#Data preprocessing
 	X = DataPreprocessing(X, dataset)
 
 	#build mutual info table
 	MAX_FEANUM = 50
-	#test
-	'''
-	x1 = np.array([0,0,0,0,0,0,1,0,1,0])
-	x2 = np.array([0,0,0,0,0,1,0,0,1,0])
-	x3 = np.array([0,0,0,0,1,0,0,0,1,0])
-	x4 = np.array([0,0,0,1,0,0,0,0,1,0])
-	x5 = np.array([0,0,1,0,0,0,1,0,1,0])
-	x6 = np.array([0,1,0,0,0,1,0,0,1,0])
-		
-	S = np.array([x1,x2,x3,x4,x5,x6])
-	X = S.T
-	y = np.array([0,1,2,2,0,0,0,1,2,0])
-	'''
-	#test code end
-
 	Total_feanum = X.shape[1]
 	Rel_table = np.zeros(Total_feanum)
 	Red_table = np.zeros(Total_feanum*(Total_feanum-1)/2)
@@ -76,36 +113,16 @@ if __name__ == "__main__":
 	#Run mRMR algorithm
 	fmRMR = open('./log/mRMR_error_mean_SVM_'+dataset+'.csv', 'w')
 	error_mean = []
-
-	'''
-	error_mean = [1,2,4]
-	for i in range(len(error_mean)):
-		fmRMR.write(str(error_mean[i])+',')
-	fmRMR.close()
-
-	from pandas.io.parsers import read_csv
-	dff = read_csv(os.path.expanduser('./log/mRMR_error_mean_SVM_'+dataset+'.csv'))
-	print dff
-	print dff.columns[0:-1].values
-	print dff[dff.columns[0:-1]].values
-	exit()
-	'''
 	
 	for i in range(MAX_FEANUM):
 		scores = []
-		feat_ind = mRMR_sel(X, y, i+1, Rel_table, Red_table)
-		#print feat_ind
-		mRMR_X = X[:,feat_ind]
-		#print mRMR_X.T
-		scores = cross_validation.cross_val_score(clf_SVM, mRMR_X, y, cv=10)
-		#fmRMR.write(str(scores))
+		feat_ind = mRMR_sel(X, y, i+1, Rel_table, Red_table)		
+		mRMR_X = X[:,feat_ind]		
+		scores = cross_validation.cross_val_score(clf, mRMR_X, y, cv=10)
+		scores = 1-scores
 		error_mean.append(scores.mean())
-	#print error_mean
+	
 	for i in range(len(error_mean)):
 		fmRMR.write(str(error_mean[i])+',')
 
-	fmRMR.close()
-
-	#Run Max-Dep algorithm
-	#Run Max-Rel algorithm
-	#plot comparision chart
+	fmRMR.close()	

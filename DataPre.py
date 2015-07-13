@@ -18,12 +18,3 @@ def DataPreprocessing(data, dataset_name):
 	if dataset_name == "ARR":
 		data = discretize(data)
 	return data
-
-if __name__ == "__main__":
-	#below is test code
-	from LoadData import load
-	X,y = load("./Dataset/ARR/ARR.csv")
-	print X
-	X = DataPreprocessing(X,"ARR")
-	print "After preprocessing"
-	print X

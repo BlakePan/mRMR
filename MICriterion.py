@@ -60,6 +60,14 @@ def Cal_Dep(S, C):
 	#M : number of features
 	#m : number of data
 
+	D = 0	
+	for xi in S:
+		for fea_ind in range(S.shape[1]):
+			if (S[:,fea_ind]==xi).mean() == 1:
+				xi_index = fea_ind
+				break
+		D += Mutual_Info(xi, C)* Cal_Dep(np.delete(S, xi_index, 0),C)
+
 	return 0
 
 def Cal_Rel(S, C):
@@ -153,9 +161,15 @@ def mRMR_sel(X, C, Max_feanum, Rel_table, Red_table):
 				continue
 			tmp_set = subset			
 			cur_x = X[:,ith_feat]					#find current feature vector
-													#put it into tmp set with already selected features
-			tmp_set = np.array([cur_x]) if tmp_set == [] else np.vstack((tmp_set,cur_x))
-			set_eval.append(mRMR_table(tmp_set, X, Rel_table, Red_table))		#using mRMR selection method
+
+			tmp_rel = Lookup_Rel(cur_x, X, Rel_table)#using mRMR selection method
+
+			tmp_red = 0
+			for xj in tmp_set:
+				tmp_red += Lookup_Red([cur_x,xj], X, Red_table)
+			tmp_red /= tmp_set.shape[0]
+
+			set_eval.append(tmp_rel-tmp_red)
 
 		max_value = max(set_eval)
 		max_index = set_eval.index(max_value)# find the max one
@@ -163,35 +177,3 @@ def mRMR_sel(X, C, Max_feanum, Rel_table, Red_table):
 		subset = np.array([X[:,max_index]]) if subset == [] else np.vstack((subset,X[:,max_index]))
 	
 	return fea_ind
-
-if __name__ == "__main__":
-	#below is test code
-	x1 = np.array([0,0,0,0,0,0,1])
-	x2 = np.array([0,0,0,0,0,1,0])
-	x3 = np.array([0,0,0,0,1,0,0])
-	x4 = np.array([0,0,0,1,0,0,0])
-	S = np.array([x1,x2,x3,x4])
-	X = S.T
-
-	C = np.array([0,1,2,2,0,0,0])
-
-	m_info = Mutual_Info(x1,C)
-	print "Mutual_Info x1 C = %f" % m_info
-	m_info = Mutual_Info(x2,C)
-	print "Mutual_Info x2 C = %f" % m_info
-	m_info = Mutual_Info(x1,x2)
-	print "Mutual_Info x1 x2 = %f" % m_info
-
-	m_rel = Cal_Rel(S,C)
-	print "Cal_Rel = %f" % m_rel
-
-	m_red = Cal_Red(S)
-	print "Cal_Red = %f" % m_red
-
-	mRMR_val = mRMR(S,C)
-	print "mRMR_val = %f" % mRMR_val
-
-	fea_ind = mRMR_sel(X,C,2)
-	print "feature index"
-	print fea_ind
-	
