@@ -1,4 +1,5 @@
 import os
+from pandas.io.parsers import read_csv
 import numpy as np
 
 #my moudles
@@ -27,6 +28,7 @@ dir_path = "./Dataset/"
 dataset = "ARR" #suppoort: HDR ARR NCI LYM
 dir_path = dir_path + dataset + '/'
 file = dir_path + dataset + ".csv"
+MAX_FEANUM = 50
 
 #Read data set from file
 X,y = load(file)
@@ -99,29 +101,65 @@ if __name__ == "__main__":
 	#Data preprocessing
 	X = DataPreprocessing(X, dataset)
 
-	#build mutual info table
-	MAX_FEANUM = 50
+	#build mutual info table	
 	Total_feanum = X.shape[1]
+	MAX_FEANUM = Total_feanum if MAX_FEANUM > Total_feanum else MAX_FEANUM
 	Rel_table = np.zeros(Total_feanum)
 	Red_table = np.zeros(Total_feanum*(Total_feanum-1)/2)
-	[Rel_table, Red_table] = Build_Minfo_table(X, y, Rel_table, Red_table)
+	
+	#save to files
+	Rel_table_fname = dir_path + "Rel_table.csv"
+	Red_table_fname = dir_path + "Red_table.csv"
+
+	if os.path.isfile(Rel_table_fname) and os.path.isfile(Rel_table_fname):
+		#if files already exit, read tables from files
+		Rel_table_df = read_csv(os.path.expanduser(Rel_table_fname))
+		Rel_table = (Rel_table_df[Rel_table_df.columns[:-1]].values)[0]
+		Red_table_df = read_csv(os.path.expanduser(Red_table_fname))
+		Red_table = (Red_table_df[Red_table_df.columns[:-1]].values)[0]
+	else:
+		Rel_table = np.zeros(Total_feanum)
+		Red_table = np.zeros(Total_feanum*(Total_feanum-1)/2)
+		[Rel_table, Red_table] = Build_Minfo_table(X, y, Rel_table, Red_table)
+		f_rel = open(Rel_table_fname, 'w')
+		f_red = open(Red_table_fname, 'w')
+		for i in range(len(Rel_table)):
+			f_rel.write('Rel'+str(i)+',')
+		f_rel.write('\n')
+		for i in range(len(Rel_table)):
+			f_rel.write(str(Rel_table[i])+',')
+		for i in range(len(Red_table)):
+			f_red.write('Red'+str(i)+',')
+		f_red.write('\n')
+		for i in range(len(Red_table)):
+			f_red.write(str(Red_table[i])+',')
+		f_rel.close()
+		f_red.close()	
+
 	logger.debug('Rel_table')
 	logger.debug(Rel_table)
 	logger.debug('Red_table')
 	logger.debug(Red_table)
-	
-	#Run mRMR algorithm
-	fmRMR = open('./log/mRMR_error_mean_SVM_'+dataset+'.csv', 'w')
-	error_mean = []
-	
+		
+	#Run mRMR algorithm	
+	error_mean = []	
+	feat_ind = []
 	for i in range(MAX_FEANUM):
+		print "Select %d features from X" % (i+1)
 		scores = []
-		feat_ind = mRMR_sel(X, y, i+1, Rel_table, Red_table)		
+		feat_ind = mRMR_sel(X, y, Rel_table, Red_table, feat_ind)	
+		print feat_ind	
 		mRMR_X = X[:,feat_ind]		
 		scores = cross_validation.cross_val_score(clf, mRMR_X, y, cv=10)
 		scores = 1-scores
 		error_mean.append(scores.mean())
+		print "error mean %f" % error_mean[i]
 	
+	#save mean error value to file
+	fmRMR = open('./log/mRMR_error_mean_SVM_'+dataset+'.csv', 'w')
+	for i in range(len(error_mean)):
+		fmRMR.write("indexnum_"+str(i+1)+',')
+	fmRMR.write('\n')
 	for i in range(len(error_mean)):
 		fmRMR.write(str(error_mean[i])+',')
 
