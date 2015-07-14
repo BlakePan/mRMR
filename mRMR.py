@@ -9,6 +9,8 @@ from MICriterion import mRMR_sel,Build_Minfo_table
 
 #classifiers
 from sklearn.svm import SVC
+from sklearn.naive_bayes import GaussianNB
+from sklearn.lda import LDA
 from sklearn import cross_validation
 
 #logging setting
@@ -24,16 +26,17 @@ logger.addHandler(handler)
 logger.setLevel(log_level)
 
 #Parameters
-dir_path = "./Dataset/"
-dataset = "ARR" #suppoort: HDR ARR NCI LYM
+dir_path = './Dataset/'
+dataset = 'ARR' #suppoort: HDR ARR NCI LYM
 dir_path = dir_path + dataset + '/'
-file = dir_path + dataset + ".csv"
+datafile = dir_path + dataset + '.csv'
 MAX_FEANUM = 50
+clf_name = 'LDA'
 
 #Read data set from file
-X,y = load(file)
+X,y = load(datafile)
 
-if dataset == "ARR":
+if dataset == 'ARR':
 	y = [ 1 if yi==1 else -1 for yi in y]# 1 means normal, other cases are abnormal
 
 logger.debug('X')
@@ -42,7 +45,12 @@ logger.debug('y')
 logger.debug(y)
 
 #Setting of classifer
-clf = SVC(kernel='linear', C=1)
+if clf_name == 'NB':
+	clf = GaussianNB()
+elif clf_name == 'SVM':
+	clf = SVC(kernel='linear', C=1)
+elif clf_name == 'LDA':
+	clf = LDA()
 
 def Wrapper(feature_index, X, y, sel = "forward"):
 	f_index = feature_index
@@ -154,9 +162,12 @@ if __name__ == "__main__":
 		scores = 1-scores
 		error_mean.append(scores.mean())
 		print "error mean %f" % error_mean[i]
+		
+	logger.debug('feat_ind')
+	logger.debug(feat_ind)
 	
 	#save mean error value to file
-	fmRMR = open('./log/mRMR_error_mean_SVM_'+dataset+'.csv', 'w')
+	fmRMR = open('./log/mRMR_error_mean_'+clf_name+'_'+dataset+'.csv', 'w')
 	for i in range(len(error_mean)):
 		fmRMR.write("indexnum_"+str(i+1)+',')
 	fmRMR.write('\n')
