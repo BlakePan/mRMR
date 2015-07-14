@@ -8,6 +8,8 @@ from DataPre import DataPreprocessing
 from MICriterion import mRMR_sel,Build_Minfo_table
 
 #classifiers
+from svm import *
+from svmutil import *
 from sklearn.svm import SVC
 from sklearn.naive_bayes import GaussianNB
 from sklearn.lda import LDA
@@ -15,6 +17,8 @@ from sklearn import cross_validation
 
 #logging setting
 import logging
+if not os.path.exists('./log'):
+	os.makedirs('./log')
 log_file = "./log/mRMR.log"
 log_level = logging.DEBUG
 logger = logging.getLogger("mRMR")
@@ -31,10 +35,11 @@ dataset = 'ARR' #suppoort: HDR ARR NCI LYM
 dir_path = dir_path + dataset + '/'
 datafile = dir_path + dataset + '.csv'
 MAX_FEANUM = 50
-clf_name = 'LDA'
+clf_name = 'SVM'
+clf_package = 'libsvm' #sklearn
 
 #Read data set from file
-X,y = load(datafile)
+X,y = load(datafile, True if clf_name == 'NB' else False)
 
 if dataset == 'ARR':
 	y = [ 1 if yi==1 else -1 for yi in y]# 1 means normal, other cases are abnormal
@@ -157,10 +162,24 @@ if __name__ == "__main__":
 		scores = []
 		feat_ind = mRMR_sel(X, y, Rel_table, Red_table, feat_ind)	
 		print feat_ind	
-		mRMR_X = X[:,feat_ind]		
-		scores = cross_validation.cross_val_score(clf, mRMR_X, y, cv=10)
-		scores = 1-scores
-		error_mean.append(scores.mean())
+		mRMR_X = X[:,feat_ind]
+
+		if clf_package == 'libsvm':
+			#libsvm package
+			mRMR_X = mRMR_X.tolist()
+			prob = svm_problem(y, mRMR_X)
+			param = svm_parameter('-s 3 -c 5 -h 0')
+			m = svm_train(y, mRMR_X, '-c 5')
+			m = svm_train(prob, '-t 2 -c 5')
+			m = svm_train(prob, param)
+			scores = svm_train(y, mRMR_X, '-v 10')		
+			error_mean.append(1-scores/100)
+		elif clf_package == 'sklearn':
+			#sklearn package
+			scores = cross_validation.cross_val_score(clf, mRMR_X, y, cv=10)
+			scores = 1-scores
+			error_mean.append(scores.mean())
+
 		print "error mean %f" % error_mean[i]
 		
 	logger.debug('feat_ind')

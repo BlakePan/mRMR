@@ -2,7 +2,7 @@ import os
 from pandas.io.parsers import read_csv
 import matplotlib.pyplot as plt
 
-clf_name = 'SVM'
+clf_name = 'NB'
 dataset = 'ARR'
 filepath = './log/mRMR_error_mean_'+clf_name+'_'+dataset+'.csv'
 result_df = read_csv(os.path.expanduser(filepath))

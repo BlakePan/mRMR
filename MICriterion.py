@@ -30,7 +30,7 @@ def Mutual_Info(x, C): #for single mutual information, one x vs one C
 			prob_xC = M_table[x_index][C_index]
 
 			if prob_xC > 0:
-				M_info += prob_xC * np.log2(prob_xC / (prob_x[x_index] * prob_C[C_index]))
+				M_info += prob_xC * np.log10(prob_xC / (prob_x[x_index] * prob_C[C_index]))
 
 	return M_info
 
@@ -194,33 +194,25 @@ def mRMR_sel(X, C, Rel_table, Red_table, cur_featind):
 
 	for ith_feat in range(num_feat):
 		subset = X[:,cur_featind].T if len(cur_featind) > 0 else []
-		#print "scanning feature, index:%d" % ith_feat
 		if ith_feat not in cur_featind:
-			#t0 = time.clock()
 			#get one feature vector which did not pick before
 			cur_x = X[:,ith_feat]
-			subset = np.array(cur_x) if subset == [] else np.vstack((subset,cur_x))
-			#print (time.clock()-t0), "seconds"
+			#subset = np.array(cur_x) if subset == [] else np.vstack((subset,cur_x))
 
 			#Calculation for mRMR method
-			#t0 = time.clock()
 			tmp_rel = Lookup_Rel(cur_x, X, Rel_table)
-			#print (time.clock()-t0), "seconds"
 
-			#t0 = time.clock()
 			tmp_red = 0
-			if subset.ndim == 1:
-				tmp_red = Lookup_Red(np.array([cur_x,subset]), X, Red_table)
+			if subset == []:
+				#tmp_red = Lookup_Red(np.array([cur_x,subset]), X, Red_table)
+				tmp_red = 0
 			else:
 				for xj in subset:
 					tmp_red += Lookup_Red(np.array([cur_x,xj]), X, Red_table)
-			tmp_red /= subset.shape[0]
-			#print (time.clock()-t0), "seconds"
+				tmp_red /= subset.shape[0]
 
-			#t0 = time.clock()
 			#store the value and below find which one is the max
 			eval_list.append(tmp_rel-tmp_red)
-			#print (time.clock()-t0), "seconds"
 		else:
 			#Give the smallest value to those features who picked before
 			eval_list.append(-sys.maxint-1)
@@ -228,5 +220,23 @@ def mRMR_sel(X, C, Rel_table, Red_table, cur_featind):
 	max_value = max(eval_list)
 	max_index = eval_list.index(max_value)
 	cur_featind.append(max_index)		
-	
 	return cur_featind
+
+if __name__ == "__main__":
+
+	x0 = np.array([0,1,0,0,0,1,0,0,1,0])
+	x1 = np.array([0,0,0,0,0,0,1,0,1,0])
+	x2 = np.array([0,0,0,0,0,1,0,0,1,0])
+	x3 = np.array([0,0,0,0,1,0,0,0,1,0])
+	x4 = np.array([0,0,0,1,0,0,0,0,1,0])
+	x5 = np.array([0,0,1,0,0,0,1,0,1,0])	
+		
+	S = np.array([x0,x1,x2,x3,x4,x5])
+	X = S.T
+	y = np.array([0,1,2,2,0,0,0,1,2,0])
+
+	Total_feanum = X.shape[1]
+	Rel_table = np.zeros(Total_feanum)
+	Red_table = np.zeros(Total_feanum*(Total_feanum-1)/2)
+	print Build_Minfo_table(X, y, Rel_table, Red_table)
+
