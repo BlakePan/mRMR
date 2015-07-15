@@ -35,8 +35,8 @@ dataset = 'ARR' #suppoort: HDR ARR NCI LYM
 dir_path = dir_path + dataset + '/'
 datafile = dir_path + dataset + '.csv'
 MAX_FEANUM = 50
-clf_name = 'SVM' #NB, SVM, LDA
-clf_package = 'libsvm' #libsvm, sklearn
+clf_name = 'LDA' #NB SVM LDA
+clf_package = 'sklearn' #libsvm sklearn
 
 #Read data set from file
 X,y = load(datafile, True if dataset == 'HDR' else False)
