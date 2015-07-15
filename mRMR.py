@@ -6,7 +6,7 @@ import time
 #my moudles
 from LoadData import load
 from DataPre import DataPreprocessing
-from MICriterion import mRMR_sel,Build_Minfo_table
+from MICriterion import mRMR_sel
 
 #classifiers
 from svm import *
@@ -20,7 +20,8 @@ from sklearn import cross_validation
 import logging
 if not os.path.exists('./log'):
 	os.makedirs('./log')
-log_file = "./log/mRMR.log"
+timestr = time.strftime("%Y%m%d_%H%M%S")
+log_file = "./log/mRMR_"+timestr+".log"
 log_level = logging.DEBUG
 logger = logging.getLogger("mRMR")
 handler = logging.FileHandler(log_file, mode='w')
@@ -32,12 +33,21 @@ logger.setLevel(log_level)
 
 #Parameters
 dir_path = './Dataset/'
-dataset = 'HDR' #suppoort: HDR ARR NCI LYM
+dataset = 'ARR' #suppoort: HDR ARR NCI LYM
 dir_path = dir_path + dataset + '/'
 datafile = dir_path + dataset + '.csv'
 MAX_FEANUM = 50
 clf_name = 'LDA' #NB SVM LDA
 clf_package = 'sklearn' #libsvm sklearn
+if clf_package == 'libsvm' and not clf_name == 'SVM':
+	print 'libsvm only suppoort SVM classifer'
+	exit()
+logger.info("dataset")
+logger.info(dataset)
+logger.info("clf_name")
+logger.info(clf_name)
+logger.info("clf_package")
+logger.info(clf_package)
 
 #Read data set from file
 X,y = load(datafile, True if dataset == 'HDR' else False)
@@ -114,49 +124,6 @@ def Wrapper(feature_index, X, y, sel = "forward"):
 if __name__ == "__main__":
 	#Data preprocessing
 	X = DataPreprocessing(X, dataset)
-
-	'''
-	#build mutual info table	
-	Total_feanum = X.shape[1]
-	MAX_FEANUM = Total_feanum if MAX_FEANUM > Total_feanum else MAX_FEANUM
-	Rel_table = np.zeros(Total_feanum)
-	Red_table = np.zeros(Total_feanum*(Total_feanum-1)/2)
-	
-	#save to files
-	Rel_table_fname = dir_path + "Rel_table.csv"
-	Red_table_fname = dir_path + "Red_table.csv"
-
-	if os.path.isfile(Rel_table_fname) and os.path.isfile(Rel_table_fname):
-		#if files already exit, read tables from files
-		Rel_table_df = read_csv(os.path.expanduser(Rel_table_fname))
-		Rel_table = (Rel_table_df[Rel_table_df.columns[:-1]].values)[0]
-		Red_table_df = read_csv(os.path.expanduser(Red_table_fname))
-		Red_table = (Red_table_df[Red_table_df.columns[:-1]].values)[0]
-	else:
-		Rel_table = np.zeros(Total_feanum)
-		Red_table = np.zeros(Total_feanum*(Total_feanum-1)/2)
-		[Rel_table, Red_table] = Build_Minfo_table(X, y, Rel_table, Red_table)
-		f_rel = open(Rel_table_fname, 'w')
-		f_red = open(Red_table_fname, 'w')
-		for i in range(len(Rel_table)):
-			f_rel.write('Rel'+str(i)+',')
-		f_rel.write('\n')
-		for i in range(len(Rel_table)):
-			f_rel.write(str(Rel_table[i])+',')
-		for i in range(len(Red_table)):
-			f_red.write('Red'+str(i)+',')
-		f_red.write('\n')
-		for i in range(len(Red_table)):
-			f_red.write(str(Red_table[i])+',')
-		f_rel.close()
-		f_red.close()	
-
-	logger.debug('Rel_table')
-	logger.debug(Rel_table)
-	logger.debug('Red_table')
-	logger.debug(Red_table)
-	'''
-		
 	#Run mRMR algorithm	
 	error_mean = []
 	feat_ind = []
@@ -190,11 +157,11 @@ if __name__ == "__main__":
 
 		print "error mean %f" % error_mean[i]
 		
-	logger.debug('feat_ind')
-	logger.debug(feat_ind)
+	logger.info('feat_ind')
+	logger.info(feat_ind)
 	
 	#save mean error value to file
-	fmRMR = open('./log/mRMR_error_mean_'+clf_name+'_'+dataset+'.csv', 'w')
+	fmRMR = open('./log/mRMR_error_mean_'+clf_name+'_'+dataset+'_'+timestr+'.csv', 'w')
 	for i in range(len(error_mean)):
 		fmRMR.write("indexnum_"+str(i+1)+',')
 	fmRMR.write('\n')
@@ -202,7 +169,7 @@ if __name__ == "__main__":
 		fmRMR.write(str(error_mean[i])+',')
 	fmRMR.close()
 
-	ftime = open('./log/cost_time_'+clf_name+'_'+dataset+'.csv', 'w')
+	ftime = open('./log/cost_time_'+clf_name+'_'+dataset+'_'+timestr+'.csv', 'w')
 	for i in range(len(costtime)):
 		ftime.write("t"+str(i+1)+',')
 	ftime.write('\n')
