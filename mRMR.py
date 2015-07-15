@@ -1,6 +1,7 @@
 import os
 from pandas.io.parsers import read_csv
 import numpy as np
+import time
 
 #my moudles
 from LoadData import load
@@ -31,7 +32,7 @@ logger.setLevel(log_level)
 
 #Parameters
 dir_path = './Dataset/'
-dataset = 'ARR' #suppoort: HDR ARR NCI LYM
+dataset = 'HDR' #suppoort: HDR ARR NCI LYM
 dir_path = dir_path + dataset + '/'
 datafile = dir_path + dataset + '.csv'
 MAX_FEANUM = 50
@@ -114,6 +115,7 @@ if __name__ == "__main__":
 	#Data preprocessing
 	X = DataPreprocessing(X, dataset)
 
+	'''
 	#build mutual info table	
 	Total_feanum = X.shape[1]
 	MAX_FEANUM = Total_feanum if MAX_FEANUM > Total_feanum else MAX_FEANUM
@@ -153,15 +155,21 @@ if __name__ == "__main__":
 	logger.debug(Rel_table)
 	logger.debug('Red_table')
 	logger.debug(Red_table)
+	'''
 		
 	#Run mRMR algorithm	
-	error_mean = []	
+	error_mean = []
 	feat_ind = []
+	costtime = []
 	for i in range(MAX_FEANUM):
 		print "Select %d features from X" % (i+1)
 		scores = []
-		feat_ind = mRMR_sel(X, y, Rel_table, Red_table, feat_ind)	
-		print feat_ind	
+		t0 = time.clock()
+		feat_ind = mRMR_sel(X, y, feat_ind)	
+		print feat_ind
+		t1 = time.clock()-t0
+		costtime.append(t1)
+		print t1, 'seconds'
 		mRMR_X = X[:,feat_ind]
 
 		if clf_package == 'libsvm':
@@ -192,5 +200,12 @@ if __name__ == "__main__":
 	fmRMR.write('\n')
 	for i in range(len(error_mean)):
 		fmRMR.write(str(error_mean[i])+',')
+	fmRMR.close()
 
-	fmRMR.close()	
+	ftime = open('./log/cost_time_'+clf_name+'_'+dataset+'.csv', 'w')
+	for i in range(len(costtime)):
+		ftime.write("t"+str(i+1)+',')
+	ftime.write('\n')
+	for i in range(len(costtime)):
+		ftime.write(str(costtime[i])+',')
+	ftime.close()

@@ -187,8 +187,39 @@ def mRMR_table(S, X, Rel_table, Red_table):
 	R = Lookup_Red(S, X, Red_table)
 	return (D-R)
 '''
+def mRMR_sel(X, C, cur_featind):
+	num_feat = X.shape[1]	
+	eval_list = []
 
-def mRMR_sel(X, C, Rel_table, Red_table, cur_featind):
+	for ith_feat in range(num_feat):
+		subset = X[:,cur_featind].T if len(cur_featind) > 0 else []
+		if ith_feat not in cur_featind:
+			#get one feature vector which did not pick before
+			xi = X[:,ith_feat]
+
+			#Calculation for mRMR method
+			tmp_rel = Mutual_Info(xi, C)
+
+			tmp_red = 0
+			if subset == []:
+				tmp_red = 0
+			else:
+				for xj in subset:
+					tmp_red += Mutual_Info(xi,xj)
+				tmp_red /= subset.shape[0]
+
+			#store the value and below find which one is the max
+			eval_list.append(tmp_rel-tmp_red)
+		else:
+			#Give the smallest value to those features who picked before
+			eval_list.append(-sys.maxint-1)
+
+	max_value = max(eval_list)
+	max_index = eval_list.index(max_value)
+	cur_featind.append(max_index)		
+	return cur_featind
+
+def mRMR_sel_table(X, C, Rel_table, Red_table, cur_featind):
 	num_feat = X.shape[1]	
 	eval_list = []
 
@@ -222,8 +253,8 @@ def mRMR_sel(X, C, Rel_table, Red_table, cur_featind):
 	cur_featind.append(max_index)		
 	return cur_featind
 
+'''
 if __name__ == "__main__":
-
 	x0 = np.array([0,1,0,0,0,1,0,0,1,0])
 	x1 = np.array([0,0,0,0,0,0,1,0,1,0])
 	x2 = np.array([0,0,0,0,0,1,0,0,1,0])
@@ -239,4 +270,5 @@ if __name__ == "__main__":
 	Rel_table = np.zeros(Total_feanum)
 	Red_table = np.zeros(Total_feanum*(Total_feanum-1)/2)
 	print Build_Minfo_table(X, y, Rel_table, Red_table)
+'''
 
