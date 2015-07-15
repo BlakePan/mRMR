@@ -35,11 +35,11 @@ dataset = 'ARR' #suppoort: HDR ARR NCI LYM
 dir_path = dir_path + dataset + '/'
 datafile = dir_path + dataset + '.csv'
 MAX_FEANUM = 50
-clf_name = 'SVM'
-clf_package = 'libsvm' #sklearn
+clf_name = 'SVM' #NB, SVM, LDA
+clf_package = 'libsvm' #libsvm, sklearn
 
 #Read data set from file
-X,y = load(datafile, True if clf_name == 'NB' else False)
+X,y = load(datafile, True if dataset == 'HDR' else False)
 
 if dataset == 'ARR':
 	y = [ 1 if yi==1 else -1 for yi in y]# 1 means normal, other cases are abnormal
