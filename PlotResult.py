@@ -17,8 +17,8 @@ if __name__ == "__main__":
 		result = (result_df[result_df.columns[:-1]].values)[0]
 		plt.plot(result)
 		plt.grid(True)
-		y1 = float(raw_input('y1: '))
-		y2 = float(raw_input('y2: '))
+		y1 = float(raw_input('y_min: '))
+		y2 = float(raw_input('y_max: '))
 		print user_input
 		plt.axis([0, 50, y1, y2])
 #		plt.axis([0, 50, 0.15, 0.35])
