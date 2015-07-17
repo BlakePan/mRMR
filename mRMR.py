@@ -6,7 +6,7 @@ import time
 #my moudles
 from LoadData import load
 from DataPre import DataPreprocessing
-from MICriterion import Mutual_Info,mRMR_sel
+from MICriterion import Mutual_Info, mRMR_sel, MaxRel_sel
 
 #classifiers
 from svm import *
@@ -33,20 +33,28 @@ logger.setLevel(log_level)
 
 if __name__ == "__main__":
 	#Parameters
-	if not len(sys.argv) == 4:
-		print 'worng argument size, expected:3, current input:', len(sys.argv)-1
+	if not len(sys.argv) == 5:
+		print 'worng argument size, expected:4, current input:', len(sys.argv)-1
 		exit()
+	
 	clf_name = sys.argv[1]
 	if not (clf_name == 'NB' or clf_name == 'SVM' or clf_name == 'LDA'):
 		print 'first argument is classfier name'
 		exit()
+	
 	dataset = sys.argv[2]
 	if not (dataset == 'HDR' or dataset == 'ARR' or dataset == 'NCI' or dataset == 'LYM'):
 		print 'second argument is data set name'
 		exit()
-	clf_package = sys.argv[3]
+
+	algthm_name = sys.argv[3]
+	if not (algthm_name == 'mRMR' or algthm_name == 'MaxRel'):
+		print 'third argument is selection of algorithm'
+		exit()
+	
+	clf_package = sys.argv[4]
 	if not (clf_package == 'sklearn' or clf_package == 'libsvm'):
-		print 'third argument is package name'
+		print 'fourth argument is package name'
 		exit()
 	if clf_package == 'libsvm' and not clf_name == 'SVM':
 		print 'libsvm only suppoort SVM classifer'
@@ -84,7 +92,6 @@ if __name__ == "__main__":
 
 	#Data preprocessing
 	X = DataPreprocessing(X, dataset)
-	#X += 1
 	logger.debug('X after preprocessing')
 	logger.debug(X)
 	n_sample = X.shape[0]
@@ -102,9 +109,6 @@ if __name__ == "__main__":
 		rel_array[ith_feat] = (Mutual_Info(xi, y))
 		#mRMR_list.append(Mutual_Info(xi, y))
 
-	#print "Select 1st features from X"
-	#feat_ind.append(np.argsort(rel_array)[-1])
-
 	for i in range(MAX_FEANUM):
 		scores = 0
 		t0 = time.clock()
@@ -113,7 +117,10 @@ if __name__ == "__main__":
 			feat_ind.append(np.argsort(rel_array)[-1])
 		else:
 			print "Select %d features from X" % (i+1)
-			feat_ind = mRMR_sel(X, y, feat_ind, rel_array, red_array)
+			if algthm_name == 'mRMR':
+				feat_ind = mRMR_sel(X, feat_ind, rel_array, red_array)
+			elif algthm_name == 'MaxRel':
+				feat_ind = MaxRel_sel(X, y, feat_ind, rel_array)
 			#feat_ind = mRMR_sel(X, y, feat_ind, mRMR_list)
 			#feat_ind = mRMR_sel(X, y, feat_ind)
 		t1 = time.clock()-t0

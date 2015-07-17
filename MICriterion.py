@@ -112,7 +112,7 @@ def mRMR_sel(X, C, cur_featind):
 	cur_featind.append(max_index)		
 	return cur_featind
 '''
-def mRMR_sel(X, C, cur_featind, rel_array, red_array):
+def mRMR_sel(X, cur_featind, rel_array, red_array):
 	num_feat = X.shape[1]
 	num_sel_feat = len(cur_featind)
 	mRMR_array = np.ones(num_feat)*(-sys.maxint-1)
@@ -124,5 +124,20 @@ def mRMR_sel(X, C, cur_featind, rel_array, red_array):
 			red_array[ith_feat] += Mutual_Info(xi,xj)# record redundancy
 			mRMR_array[ith_feat] = rel_array[ith_feat] - red_array[ith_feat]/num_sel_feat
 	max_index = np.argsort(mRMR_array)[-1]
+	cur_featind.append(max_index)
+	return cur_featind
+
+def MaxRel_sel(X, C, cur_featind, rel_array):
+	num_feat = X.shape[1]
+	num_sel_feat = len(cur_featind)
+	MaxRel_array = np.ones(num_feat)*(-sys.maxint-1)
+	#xj = X[:,cur_featind[-1]] #the last append feature
+
+	for ith_feat in range(num_feat):
+		if ith_feat not in cur_featind:
+			xi = X[:,ith_feat]
+			rel_array[ith_feat] += Mutual_Info(xi,C)# record relevance
+			MaxRel_array[ith_feat] = rel_array[ith_feat]/(num_sel_feat+1)
+	max_index = np.argsort(MaxRel_array)[-1]
 	cur_featind.append(max_index)
 	return cur_featind
