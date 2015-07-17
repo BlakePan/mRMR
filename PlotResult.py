@@ -13,7 +13,7 @@ if __name__ == "__main__":
 		filename.sort()
 		for index, f in enumerate(filename):
 			print "%d. %s" % (index+1, f)
-		user_input = int(raw_input('Select one csv file (-1 for exit): '))
+		user_input = int(raw_input('Select one csv file (-1 to exit): '))
 		if user_input == -1:
 			exit()
 		filename = filename[user_input-1]
@@ -28,7 +28,7 @@ if __name__ == "__main__":
 			for index, f in enumerate(comparefile):
 				if not f == filename:
 					print "%d. %s" % (index+1, f)
-			user_input = int(raw_input('Select another one csv file (-1 for exit): '))
+			user_input = int(raw_input('Select another one csv file (-1 to exit): '))
 			if user_input == -1:
 				exit()
 			comparefile = comparefile[user_input-1]

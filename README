@@ -2,13 +2,20 @@ Need packages:
 sklearn (http://scikit-learn.org/dev/install.html)
 pandas (http://pandas.pydata.org/pandas-docs/version/0.13.1/install.html)
 
+#
 Run experiment:
-python mRMR.py [classifier] [dataset] [package]
+python mRMR.py [classifier] [dataset] [algorithm] [package]
+python Wrapper.py [classifer] [dataset] [algorithm] [package] [method]
 
 classifier: NB, SVM, LDA
 dataset: ARR, HDR
+algorithm: mRMR, MaxRel
 package: sklearn, libsvm
+method: forward, backward
 NOTE: you can only use libsvm with SVM classifier
 
+#
 Show result:
-python PlotResult.py
+python PlotResult.py [method]
+
+method: single, compare

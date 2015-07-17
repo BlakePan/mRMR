@@ -152,7 +152,7 @@ if __name__ == "__main__":
 	logger.info(feat_ind)
 	
 	#save mean error value to file
-	fmRMR = open('./log/mRMR_error_mean_'+clf_name+'_'+dataset+'_'+timestr+'.csv', 'w')
+	fmRMR = open('./log/'+algthm_name+'_error_mean_'+clf_name+'_'+dataset+'_'+timestr+'.csv', 'w')
 	for i in range(len(error_mean)):
 		fmRMR.write("indexnum_"+str(i+1)+',')
 	fmRMR.write('\n')
@@ -168,7 +168,7 @@ if __name__ == "__main__":
 		ftime.write(str(costtime[i])+',')
 	ftime.close()
 
-	findex = open('./Dataset/'+dataset+'/index/'+clf_name+'.csv', 'w')
+	findex = open('./Dataset/'+dataset+'/index/'+algthm_name+'_'+clf_name+'.csv', 'w')
 	for i in range(len(feat_ind)):
 		findex.write("ind"+str(i+1)+',')
 	findex.write('\n')

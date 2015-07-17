@@ -16,90 +16,113 @@ from sklearn.naive_bayes import GaussianNB, MultinomialNB, BernoulliNB
 from sklearn.lda import LDA
 from sklearn import cross_validation
 
-def Wrapper(feature_index, X, y, dataset, clf, packname ='sklearn', sel = "forward"):
+def Wrapper(feature_index, X, y, dataset, clf, packname ='sklearn', sel = 'forward'):
 	f_index = feature_index	
 	num_featind = f_index.shape[0]
 	f_index = f_index.tolist()
 	print f_index
 	
-	optimal_set = [] if sel == "forward" else X[:,f_index]
+	optimal_set = [] if sel == 'forward' else f_index[:]
+	scores = 0
+	tmp_min = 0
 
-	if sel == "forward":
-		scores = 0
-		tmp_min = 0
-
-		for inc_ind in range(num_featind):
-			error_mean = []
-			print 'current optimal set', optimal_set
-			print 'Adding %dth feature index' % (inc_ind+1)
-			for index in f_index:				
-				cur_index = optimal_set
-				if index not in cur_index:
-					print 'testing index' ,index					
-					cur_index.append(index)
-					cur_x = X[:,cur_index]
-					#exit()
-					cv_fold = 10 if dataset == 'HDR' or dataset == 'ARR' else n_sample
-					if packname == 'libsvm':
-						#libsvm package
-						cur_x = cur_x.tolist()
-						prob = svm_problem(y, cur_x)
-						param = svm_parameter('-s 3 -c 5 -h 0')
-						m = svm_train(y, cur_x, '-c 5')
-						m = svm_train(prob, '-t 2 -c 5')
-						m = svm_train(prob, param)
-						scores = svm_train(y, cur_x, '-v '+str(cv_fold))
-						error_mean.append(1-scores/100)
-					elif packname == 'sklearn':
-						#sklearn package
-						scores = cross_validation.cross_val_score(clf, cur_x, y, cv=cv_fold)
-						scores = 1-scores
-						error_mean.append(scores.mean())
-
-			min_value = min(error_mean)
-			min_index= error_mean.index(min_value)
-			print 'min value this round', min_value
-
-			if inc_ind == 0 or (inc_ind > 0 and min_value <= tmp_min):
-				print 'find better value, add to index list'
-				tmp_min = min_value
-				np.append(optimal_set, f_index[min_index])
-				#np.delete(f_index, min_index, None)
-			elif min_value > tmp_min:
-				print 'no better, end'
-				return [optimal_set, error_mean]
-
-		return [optimal_set, error_mean]
-	else:
-		scores = []
+	final_error_mean = []
+	for inc_ind in range(num_featind):
 		error_mean = []
-		tmp_min = 0
+		pass_ind_list = []
+		print 'current optimal set', optimal_set
+		print '%s %dth feature index' % ('Adding' if sel == 'forward' else 'Deleting',inc_ind+1)
+		for f_ind in f_index:			
+			cur_index = optimal_set[:]
 
-		for inc_ind in range(num_featind):
-			for index in optimal_set:				
-				cur_index = np.delete(optimal_set,optimal_set.index(index))
+			if 	(sel == 'forward' and f_ind not in cur_index) or\
+				(sel == 'backward' and f_ind in cur_index):				
+				pass_ind_list.append(f_ind)
+
+				if sel == 'forward':
+					cur_index.append(f_ind)
+				elif sel == 'backward':
+					cur_index.remove(f_ind)
+
 				cur_x = X[:,cur_index]
-				scores = cross_validation.cross_val_score(clf, cur_x, y, cv=10)	
-				scores = 1-scores	
-				error_mean.append(scores.mean())
+				cv_fold = 10 if dataset == 'HDR' or dataset == 'ARR' else n_sample
+				if packname == 'libsvm':
+					#libsvm package
+					cur_x = cur_x.tolist()
+					prob = svm_problem(y, cur_x)
+					param = svm_parameter('-s 3 -c 5 -h 0')
+					m = svm_train(y, cur_x, '-c 5')
+					m = svm_train(prob, '-t 2 -c 5')
+					m = svm_train(prob, param)
+					scores = svm_train(y, cur_x, '-v '+str(cv_fold))
+					error_mean.append(1-scores/100)
+				elif packname == 'sklearn':
+					#sklearn package
+					scores = cross_validation.cross_val_score(clf, cur_x, y, cv=cv_fold)
+					scores = 1-scores
+					error_mean.append(scores.mean())
 
-			min_value = min(error_mean)
-			min_index= error_mean.index(min_value)			
+				#print error_mean[-1]
 
-			if inc_ind == 0 or (inc_ind > 0 and min_value <= tmp_min):
-				tmp_min = min_value				
-			elif min_value > tmp_min:
-				return optimal_set
+		min_value = min(error_mean)
+		min_index = error_mean.index(min_value)
+		min_index = pass_ind_list[min_index]
+		#print 'min value this round', min_value
+		print 'min value index', min_index
 
-		return optimal_set
+		if inc_ind == 0 or (inc_ind > 0 and min_value <= tmp_min):
+			print 'find better value, add to index list'				
+			tmp_min = min_value
+			final_error_mean.append(min_value)
+
+			if sel == 'forward':
+				optimal_set.append(min_index)
+			elif sel == 'backward':
+				optimal_set.remove(min_index)
+
+		elif min_value > tmp_min:
+			print 'no better, end'
+			return [optimal_set, final_error_mean]
+
+	return [optimal_set, error_mean]		
 
 if __name__ == "__main__":
 	timestr = time.strftime("%Y%m%d_%H%M%S")
-	packname = sys.argv[1]
 
-	dataset = 'ARR'
-	clf_name = 'SVM'
-	index_df = read_csv(os.path.expanduser('./Dataset/'+dataset+'/index/'+clf_name+'.csv'))
+	#Parameters
+	if not len(sys.argv) == 6:
+		print 'worng argument size, expected:4, current input:', len(sys.argv)-1
+		exit()
+	
+	clf_name = sys.argv[1]
+	if not (clf_name == 'NB' or clf_name == 'SVM' or clf_name == 'LDA'):
+		print 'first argument is classfier name'
+		exit()
+	
+	dataset = sys.argv[2]
+	if not (dataset == 'HDR' or dataset == 'ARR' or dataset == 'NCI' or dataset == 'LYM'):
+		print 'second argument is data set name'
+		exit()
+
+	algthm_name = sys.argv[3]
+	if not (algthm_name == 'mRMR' or algthm_name == 'MaxRel'):
+		print 'third argument is selection of algorithm'
+		exit()
+	
+	clf_package = sys.argv[4]
+	if not (clf_package == 'sklearn' or clf_package == 'libsvm'):
+		print 'fourth argument is package name'
+		exit()
+	if clf_package == 'libsvm' and not clf_name == 'SVM':
+		print 'libsvm only suppoort SVM classifer'
+		exit()
+
+	method = sys.argv[5]
+	if not (method == 'forward' or method == 'backward'):
+		print 'fifth argument is selecting method'
+		exit()
+
+	index_df = read_csv(os.path.expanduser('./Dataset/'+dataset+'/index/'+algthm_name+'_'+clf_name+'.csv'))
 	feat_ind = (index_df[index_df.columns[:-1]].values)[0]
 
 	#Read data set from file
@@ -120,9 +143,9 @@ if __name__ == "__main__":
 	elif clf_name == 'LDA':
 		clf = LDA()
 
-	[optimal_set, error_mean] = Wrapper(feat_ind, X, y, dataset, clf, packname, sel = "forward")
+	[optimal_set, error_mean] = Wrapper(feat_ind, X, y, dataset, clf, clf_package, method)
 
-	fopt = open('./log/optimal_set_error_mean_'+clf_name+'_'+dataset+'_'+timestr+'.csv', 'w')
+	fopt = open('./log/optimal_set_'+algthm_name+'_error_mean_'+clf_name+'_'+dataset+'_'+timestr+'.csv', 'w')
 	for i in range(len(error_mean)):
 		fopt.write("indexnum_"+str(i+1)+',')
 	fopt.write('\n')
