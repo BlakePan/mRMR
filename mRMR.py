@@ -160,7 +160,7 @@ if __name__ == "__main__":
 		fmRMR.write(str(error_mean[i])+',')
 	fmRMR.close()
 
-	ftime = open('./log/cost_time_'+clf_name+'_'+dataset+'_'+timestr+'.csv', 'w')
+	ftime = open('./log/'+algthm_name+'_cost_time_'+clf_name+'_'+dataset+'_'+timestr+'.csv', 'w')
 	for i in range(len(costtime)):
 		ftime.write("t"+str(i+1)+',')
 	ftime.write('\n')
