@@ -74,44 +74,6 @@ def Cal_Red(S):
 				R += Mutual_Info(xi,xj)
 	return R/(M*M)
 
-def mRMR(S, C):
-	D = Cal_Rel(S, C)
-	R = Cal_Red(S)
-	return (D-R)
-
-'''
-def mRMR_sel(X, C, cur_featind):
-	num_feat = X.shape[1]	
-	eval_list = []
-
-	for ith_feat in range(num_feat):
-		subset = X[:,cur_featind].T if len(cur_featind) > 0 else []
-		if ith_feat not in cur_featind:
-			#get one feature vector which did not pick before
-			xi = X[:,ith_feat]
-
-			#Calculation for mRMR method
-			tmp_rel = Mutual_Info(xi, C)
-
-			tmp_red = 0
-			if subset == []:
-				tmp_red = 0
-			else:
-				for xj in subset:
-					tmp_red += Mutual_Info(xi,xj)
-				tmp_red /= subset.shape[0]
-
-			#store the value and below find which one is the max
-			eval_list.append(tmp_rel-tmp_red)
-		else:
-			#Give the smallest value to those features who picked before
-			eval_list.append(-sys.maxint-1)
-
-	max_value = max(eval_list)
-	max_index = eval_list.index(max_value)
-	cur_featind.append(max_index)		
-	return cur_featind
-'''
 def mRMR_sel(X, cur_featind, rel_array, red_array):
 	num_feat = X.shape[1]
 	num_sel_feat = len(cur_featind)
@@ -131,7 +93,6 @@ def MaxRel_sel(X, C, cur_featind, rel_array):
 	num_feat = X.shape[1]
 	num_sel_feat = len(cur_featind)
 	MaxRel_array = np.ones(num_feat)*(-sys.maxint-1)
-	#xj = X[:,cur_featind[-1]] #the last append feature
 
 	for ith_feat in range(num_feat):
 		if ith_feat not in cur_featind:

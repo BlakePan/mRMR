@@ -82,7 +82,7 @@ if __name__ == "__main__":
 	logger.info(clf_package)
 
 	#Read data set from file
-	X,y = load(datafile, True if dataset == 'HDR' else False)
+	X,y = load(datafile, False if dataset == 'ARR' else True)
 	if dataset == 'ARR':
 		y = [ 1 if yi==1 else -1 for yi in y]# 1 means normal, other cases are abnormal
 	logger.debug('X')
@@ -127,24 +127,42 @@ if __name__ == "__main__":
 		costtime.append(t1)
 		print feat_ind
 		print t1, 'seconds'
-		mRMR_X = X[:,feat_ind]
+		feat_sel_X = X[:,feat_ind]
 
+		if dataset == 'HDR' or dataset == 'ARR':
+			#sklearn package
+			scores = cross_validation.cross_val_score(clf, feat_sel_X, y, cv=10)
+			scores = 1-scores
+			error_mean.append(scores.mean())
+		elif dataset == 'NCI' or dataset == 'LYM':
+			loo = cross_validation.LeaveOneOut(n_sample)
+			scores = 0
+			for train, test in loo:
+				ith_test = feat_sel_X[test,:]
+				ith_train = feat_sel_X[train,:]
+				ith_predict = y[test]
+				ith_label = np.delete(y,test)
+				clf.fit(ith_train,ith_label)
+				scores += clf.score(ith_test,ith_predict)
+			error_mean.append(1-scores/n_sample)
+		'''
 		cv_fold = 10 if dataset == 'HDR' or dataset == 'ARR' else n_sample
 		if clf_package == 'libsvm':
 			#libsvm package
-			mRMR_X = mRMR_X.tolist()
-			prob = svm_problem(y, mRMR_X)
+			feat_sel_X = feat_sel_X.tolist()
+			prob = svm_problem(y, feat_sel_X)
 			param = svm_parameter('-s 3 -c 5 -h 0')
-			m = svm_train(y, mRMR_X, '-c 5')
+			m = svm_train(y, feat_sel_X, '-c 5')
 			m = svm_train(prob, '-t 2 -c 5')
 			m = svm_train(prob, param)
-			scores = svm_train(y, mRMR_X, '-v '+str(cv_fold))
+			scores = svm_train(y, feat_sel_X, '-v '+str(cv_fold))
 			error_mean.append(1-scores/100)
 		elif clf_package == 'sklearn':
 			#sklearn package
-			scores = cross_validation.cross_val_score(clf, mRMR_X, y, cv=cv_fold)
+			scores = cross_validation.cross_val_score(clf, feat_sel_X, y, cv=10)
 			scores = 1-scores
 			error_mean.append(scores.mean())
+		'''
 
 		print "error mean %f" % error_mean[i]
 		

@@ -24,9 +24,10 @@ def Wrapper(feature_index, X, y, dataset, clf, packname, sel = 'forward'):
 	optimal_set = [] if sel == 'forward' else f_index[:]
 	scores = 0
 	tmp_min = 0
-
+	n_sample = X.shape[0]
 	valid_range = -1
 	final_error_mean = []
+
 	for inc_ind in range(num_featind):
 		error_mean = []
 		candt_ind_list = []
@@ -34,39 +35,34 @@ def Wrapper(feature_index, X, y, dataset, clf, packname, sel = 'forward'):
 		print optimal_set
 		print '%s %dth feature index' % ('Adding' if sel == 'forward' else 'Deleting',inc_ind+1)
 		for f_ind in f_index:			
-			#cur_index = optimal_set[:]
 			candt_ind_list = optimal_set[:]
-			#print 'current candidate index:', f_ind
-			#print 'current candidate list:', candt_ind_list
 
 			if 	(sel == 'forward' and f_ind not in candt_ind_list) or\
 				(sel == 'backward' and f_ind in candt_ind_list):				
-				#candt_ind_list.append(f_ind)				
 
 				if sel == 'forward':
-					#cur_index.append(f_ind)
 					candt_ind_list.append(f_ind)
 				elif sel == 'backward':
-					#cur_index.remove(f_ind)
 					candt_ind_list.remove(f_ind)
 
 				cur_x = X[:,candt_ind_list]
-				cv_fold = 10 if dataset == 'HDR' or dataset == 'ARR' else n_sample
-				if packname == 'libsvm':
-					#libsvm package
-					cur_x = cur_x.tolist()
-					prob = svm_problem(y, cur_x)
-					param = svm_parameter('-s 3 -c 5 -h 0')
-					m = svm_train(y, cur_x, '-c 5')
-					m = svm_train(prob, '-t 2 -c 5')
-					m = svm_train(prob, param)
-					scores = svm_train(y, cur_x, '-v '+str(cv_fold))
-					error_mean.append(1-scores/100)
-				elif packname == 'sklearn':
+
+				if dataset == 'HDR' or dataset == 'ARR':
 					#sklearn package
-					scores = cross_validation.cross_val_score(clf, cur_x, y, cv=cv_fold)
+					scores = cross_validation.cross_val_score(clf, cur_x, y, cv=10)
 					scores = 1-scores
 					error_mean.append(scores.mean())
+				elif dataset == 'NCI' or dataset == 'LYM':
+					loo = cross_validation.LeaveOneOut(n_sample)
+					scores = 0
+					for train, test in loo:
+						ith_test = cur_x[test,:]
+						ith_train = cur_x[train,:]
+						ith_predict = y[test]
+						ith_label = np.delete(y,test)
+						clf.fit(ith_train,ith_label)
+						scores += clf.score(ith_test,ith_predict)
+					error_mean.append(1-scores/n_sample)
 			else:
 				error_mean.append(sys.maxint)
 
@@ -94,13 +90,11 @@ def Wrapper(feature_index, X, y, dataset, clf, packname, sel = 'forward'):
 			print 'no better, value: %f, end' % min_value
 			if sel == 'forward':
 				optimal_set = optimal_set[:valid_range]
-				#final_error_mean = final_error_mean[:valid_range]
 			return [optimal_set, final_error_mean]
 
 	if sel == 'forward':
 		optimal_set = optimal_set[:valid_range]
-		#final_error_mean = final_error_mean[:valid_range]
-	return [optimal_set, error_mean]		
+	return [optimal_set, final_error_mean]		
 
 if __name__ == "__main__":
 	timestr = time.strftime("%Y%m%d_%H%M%S")
@@ -155,6 +149,7 @@ if __name__ == "__main__":
 	if clf_name == 'NB':
 		#clf = GaussianNB()
 		#clf = MultinomialNB(fit_prior=False)
+		#X += 1
 		clf = BernoulliNB()
 	elif clf_name == 'SVM':
 		clf = SVC(kernel='linear', C=1)
