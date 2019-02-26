@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def discretize(data, dataset_name):
 	X = np.array(data)
 	[n_sample, n_feature] = X.shape
@@ -18,6 +19,7 @@ def discretize(data, dataset_name):
 				else -1 if X[ith_sample,ith_feat] < mean-std\
 				else 0
 	return X
+
 
 def DataPreprocessing(data, dataset_name):
 	if dataset_name == "HDR" or dataset_name == 'ARR':
